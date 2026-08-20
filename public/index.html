@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Phishing Race — PTERI</title>
+<link rel="icon" href='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Cpath d="M16 2.4 27.2 7.4v9.3c0 6.7-4.5 11.8-11.2 14C9.3 28.5 4.8 23.4 4.8 16.7V7.4L16 2.4Z" fill="%236ea8ff"/%3E%3Cpath d="M10.4 17.4c2.7 3.1 4.6 3 6-.1 1.4-3.1 3.3-3.3 5.6-.4" fill="none" stroke="%230b0d12" stroke-width="2.5" stroke-linecap="round"/%3E%3C/svg%3E'>
+<link rel="stylesheet" href="/public/styles.css">
+</head>
+<body>
+
+<!-- Logo sprite. Inlined so the whole demo stays dependency-free and offline.
+
+     Note the two Northwind marks: `logo-northwind` is the bank's real compass,
+     `logo-northwind-fake` is the attacker's copy. The copy is deliberately
+     ALMOST right — a slightly bluer gradient, a needle a hair off centre, a
+     softer corner radius. That is what real phishing looks like, and anyone who
+     spots it has learned the lesson the hard way round. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="g-pteri" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7fb4ff"/><stop offset="1" stop-color="#b06eff"/>
+    </linearGradient>
+    <linearGradient id="g-northwind" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1d4ed8"/><stop offset="1" stop-color="#0891b2"/>
+    </linearGradient>
+    <linearGradient id="g-northwind-fake" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2b5ad6"/><stop offset="1" stop-color="#0f93b4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- PTERI: a shield, signed. -->
+  <symbol id="logo-pteri" viewBox="0 0 32 32">
+    <path d="M16 2.4 27.2 7.4v9.3c0 6.7-4.5 11.8-11.2 14C9.3 28.5 4.8 23.4 4.8 16.7V7.4L16 2.4Z"
+          fill="url(#g-pteri)"/>
+    <path d="M10.4 17.4c2.7 3.1 4.6 3 6-.1 1.4-3.1 3.3-3.3 5.6-.4"
+          fill="none" stroke="#0b0d12" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- Northwind Bank: a compass needle pointing north. -->
+  <symbol id="logo-northwind" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="9" fill="url(#g-northwind)"/>
+    <path d="M16 5.8 20.4 17.7 16 15.2 11.6 17.7 16 5.8Z" fill="#fff"/>
+    <path d="M16 26.2 11.6 18.9 16 21.3 20.4 18.9 16 26.2Z" fill="#fff" opacity=".42"/>
+  </symbol>
+
+  <!-- The attacker's copy of it. Close enough that nobody checks. -->
+  <symbol id="logo-northwind-fake" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="url(#g-northwind-fake)"/>
+    <path d="M16.3 6.3 20.8 17.9 16.3 15.5 11.9 17.9 16.3 6.3Z" fill="#fff"/>
+    <path d="M16.3 25.8 11.9 19 16.3 21.4 20.8 19 16.3 25.8Z" fill="#fff" opacity=".5"/>
+  </symbol>
+
+  <!-- The attacker: a connection intercepted in the middle. -->
+  <symbol id="logo-attacker" viewBox="0 0 32 32">
+    <path d="M4.5 16h7.2M20.3 16h7.2" stroke="#ff5f6b" stroke-width="2.6" stroke-linecap="round"/>
+    <circle cx="16" cy="16" r="3.6" fill="none" stroke="#ff5f6b" stroke-width="2.3"/>
+  </symbol>
+
+  <!-- A phone holding a key. Used on the wallet approval sheet. -->
+  <symbol id="logo-wallet" viewBox="0 0 32 32">
+    <rect x="8.5" y="3.5" width="15" height="25" rx="4"
+          fill="none" stroke="url(#g-pteri)" stroke-width="2.2"/>
+    <circle cx="16" cy="14.2" r="3.1" fill="none" stroke="url(#g-pteri)" stroke-width="2.2"/>
+    <path d="M16 17.3v5.4m0-2.2h2.4" stroke="url(#g-pteri)" stroke-width="2.2" stroke-linecap="round"/>
+  </symbol>
+</svg>
+
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <svg class="brandmark" aria-hidden="true"><use href="#logo-pteri"/></svg>
+    <h1>The Phishing Race</h1>
+  </div>
+
+  <div class="track" id="track">
+    <button class="step" data-act="otp"><i>1</i>SMS OTP</button>
+    <button class="step" data-act="replay"><i>2</i>Stolen signature</button>
+    <button class="step" data-act="relay"><i>3</i>Live relay</button>
+  </div>
+
+  <button class="replay" id="restart">↻ Restart</button>
+</header>
+
+<main class="stage" id="stage">
+  <section class="pane" id="pane-victim">
+    <div class="pane__body">
+      <div class="chrome">
+        <span class="chrome__dot"></span><span class="chrome__dot"></span><span class="chrome__dot"></span>
+        <div class="chrome__url" id="url-bar"><span id="url-text">northwind-secure-verify.co</span></div>
+      </div>
+      <div class="viewport" id="victim"></div>
+    </div>
+    <div class="pane__label">You</div>
+  </section>
+
+  <section class="pane" id="pane-phone">
+    <div class="pane__body pane__body--phone">
+      <div class="phone"><div class="phone__notch"></div><div class="phone__screen" id="phone"></div></div>
+    </div>
+    <div class="pane__label">Your phone</div>
+  </section>
+
+  <section class="pane" id="pane-attacker">
+    <div class="pane__body">
+      <div class="chrome chrome--dark">
+        <span class="chrome__dot"></span><span class="chrome__dot"></span><span class="chrome__dot"></span>
+        <svg class="chrome__mark" aria-hidden="true"><use href="#logo-attacker"/></svg>
+        <div class="chrome__url chrome__url--dark">attacker · live</div>
+      </div>
+      <div class="terminal" id="terminal"></div>
+    </div>
+    <div class="pane__label pane__label--danger">The attacker</div>
+  </section>
+</main>
+
+<section class="coach" id="coach">
+  <span class="coach__arrow" id="coach-arrow"></span>
+  <div class="coach__main">
+    <span class="coach__eyebrow" id="coach-eyebrow">Step 1</span>
+    <p class="coach__text" id="coach-text">Loading…</p>
+  </div>
+  <button class="coach__cta" id="coach-cta" hidden>Next</button>
+</section>
+
+<ol class="rail" id="rail"></ol>
+
+<section class="result" id="result" hidden></section>
+
+<footer class="footer">
+  <button class="footer__toggle" id="details-toggle">Technical details</button>
+  <div class="details" id="details" hidden>
+    <div class="details__col">
+      <h4>What's real</h4>
+      <p>A real P-256 ECDSA keypair in your browser, real single-use nonces, and real
+      signature verification in Node — over bytes the server rebuilds itself.</p>
+    </div>
+    <div class="details__col">
+      <h4>What's simulated</h4>
+      <p>Custody only. On a phone the key lives in the Secure Enclave; here it lives in
+      browser memory. <button class="linkish" id="probe">Prove this page can't read its own key →</button></p>
+      <p class="probe-out" id="probe-out" hidden></p>
+    </div>
+    <div class="details__col">
+      <h4>Signed bytes</h4>
+      <pre id="bytes">Nothing signed yet.</pre>
+    </div>
+    <div class="details__col">
+      <h4>Fiction</h4>
+      <p>Northwind Bank doesn't exist. Every name, account and amount is invented, and the
+      lookalike domain is drawn in HTML — no such site is registered or contacted.</p>
+      <p>The fake site's logo is a near-copy of the real one: bluer gradient, needle a hair
+      off centre, softer corners. Compare Act 1 with Act 2.</p>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="/public/app.js"></script>
+</body>
+</html>

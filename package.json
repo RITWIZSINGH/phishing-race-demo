@@ -1,0 +1,14 @@
+{
+  "name": "pteri-auth-demos",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Interactive demos for PTERI signature-based auth. Zero dependencies.",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
