@@ -4,7 +4,7 @@
 // customer would actually write. Keep it small enough to read in one sitting.
 
 import crypto from 'node:crypto';
-import { serializeChallenge } from '../shared/canonical.js';
+import { serializeChallenge } from '../public/shared/canonical.js';
 
 const CHALLENGE_TTL_MS = 90_000;
 

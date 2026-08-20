@@ -54,13 +54,18 @@ async function readJsonBody(req) {
 
 // --- static ---------------------------------------------------------------
 
-async function serveStatic(pathname, res) {
-  const rel = pathname === '/' ? '/public/index.html' : pathname;
-  const target = path.join(ROOT, rel);
+// `public/` is the web root, exactly as it is once deployed. Keeping dev and
+// prod on the same URL layout is the whole reason this function is so fussy:
+// serving the repo root locally is what let /public/styles.css work here and
+// 404 in production.
+const WEB_ROOT = path.join(ROOT, 'public');
 
-  // Never serve outside the repo, and only from the two public directories.
-  const allowed = [path.join(ROOT, 'public'), path.join(ROOT, 'shared')];
-  if (!allowed.some((dir) => target === dir || target.startsWith(dir + path.sep))) {
+async function serveStatic(pathname, res) {
+  const rel = pathname === '/' ? '/index.html' : pathname;
+  const target = path.join(WEB_ROOT, rel);
+
+  // Never escape the web root, whatever the request path claims.
+  if (target !== WEB_ROOT && !target.startsWith(WEB_ROOT + path.sep)) {
     return json(res, 404, { error: 'not_found' });
   }
 

@@ -4,7 +4,7 @@
 //   1. Exactly one pane is lit at a time. Everything else recedes.
 //   2. The coach bar says one thing, and its arrow points at the lit pane.
 
-import { createDevice, signChallenge, tryToStealOwnKey } from '/public/wallet.js';
+import { createDevice, signChallenge, tryToStealOwnKey } from '/wallet.js';
 
 const RP_ORIGIN = 'https://app.northwind.bank';
 const PHISH = 'northwind-secure-verify.co';
