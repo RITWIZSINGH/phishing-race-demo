@@ -14,6 +14,20 @@ npm start
 
 Then open http://localhost:4173. Node 18+, zero dependencies.
 
+## Deploying
+
+This is one long-lived Node process. That matters: challenges are minted in
+memory and burned on first use, so the same process has to handle both the
+issuing and the verifying. Static hosts and serverless platforms cannot run it
+as-is — a static host will publish `public/` and silently never execute
+`server/`, and split serverless functions each get their own memory, which
+breaks the single-use nonce that Act 2 exists to demonstrate.
+
+**Render** — connect the repo; `render.yaml` configures everything. Or any host
+that runs a persistent Node process: Cloud Run, Railway, Fly, a plain VM. The
+server reads `PORT` from the environment and needs no build step and no
+dependencies.
+
 ## The three acts
 
 **Act 1 — SMS OTP.** You land on a lookalike domain, receive a genuine code from

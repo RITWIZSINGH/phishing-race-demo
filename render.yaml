@@ -1,0 +1,21 @@
+# Render Blueprint. Point Render at this repo and it reads this file — no
+# dashboard fields to fill in by hand.
+#
+# The demo is a single long-lived Node process, which is the whole reason it
+# lives here rather than on a serverless host: challenges are minted in memory
+# and burned on first use, and that only works when one process handles both
+# the issuing and the verifying.
+
+services:
+  - type: web
+    name: phishing-race
+    runtime: node
+    plan: free
+    # Zero dependencies, so there is nothing to build. npm install is a no-op
+    # that keeps the pipeline conventional.
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
