@@ -23,10 +23,24 @@ as-is — a static host will publish `public/` and silently never execute
 `server/`, and split serverless functions each get their own memory, which
 breaks the single-use nonce that Act 2 exists to demonstrate.
 
-**Render** — connect the repo; `render.yaml` configures everything. Or any host
-that runs a persistent Node process: Cloud Run, Railway, Fly, a plain VM. The
-server reads `PORT` from the environment and needs no build step and no
-dependencies.
+**Render** — connect the repo; `render.yaml` configures everything. Easiest to
+set up, but the free tier suspends the container after ~15 minutes idle and the
+next visitor waits 30-50 seconds for it to wake. Fine while iterating, painful
+if you are sending the link to someone.
+
+**Cloud Run** — `Dockerfile` is here and needs no arguments:
+
+```bash
+gcloud run deploy phishing-race --source . --allow-unauthenticated --region asia-south1
+```
+
+Scales to zero like the free tier but wakes in about a second, because the image
+is a base image plus 244KB of source with nothing to install. Add
+`--min-instances=1` to remove the cold start entirely.
+
+Any host that runs a persistent Node process works: Railway, Fly, a plain VM.
+The server reads `PORT` from the environment, binds all interfaces, and needs no
+build step and no dependencies.
 
 ## The three acts
 
