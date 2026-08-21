@@ -31,10 +31,18 @@ let lastFocus = null;
 
 // --- primitives -----------------------------------------------------------
 
+// One id per tab, so several people can run the demo at once without
+// overwriting each other's device key on the server. Sent as a header rather
+// than a cookie so this keeps working inside an iframe on another domain.
+const DEMO_SESSION = crypto.randomUUID();
+
 async function post(path, body) {
   const res = await fetch(path, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      'x-demo-session': DEMO_SESSION,
+    },
     body: JSON.stringify(body ?? {}),
   });
   return res.json();

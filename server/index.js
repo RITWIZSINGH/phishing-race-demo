@@ -20,6 +20,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const PORT = process.env.PORT ?? 4173;
 
+// Each browser tab sends its own id so visitors cannot tread on each other.
+// A header rather than a cookie, so the demo still works embedded in an iframe
+// on another domain, where third-party cookies are blocked.
+const sessionOf = (req) => req.headers['x-demo-session'] || 'anonymous';
+
 const RP_ORIGIN = 'https://app.northwind.bank';
 const PHISH_ORIGIN = 'https://northwind-secure-verify.co';
 const DEMO_USER = 'priya@example.com';
@@ -85,8 +90,8 @@ async function serveStatic(pathname, res) {
 
 const routes = {
   // Act 1: the OTP relay.
-  'POST /api/otp/request': async (body) => {
-    const result = requestOtp(body.username ?? DEMO_USER);
+  'POST /api/otp/request': async (body, sid) => {
+    const result = requestOtp(body.username ?? DEMO_USER, sid);
     return [200, result];
   },
 
@@ -96,26 +101,27 @@ const routes = {
   },
 
   // Enrol the browser wallet's public key.
-  'POST /api/pteri/enroll': async (body) => {
+  'POST /api/pteri/enroll': async (body, sid) => {
     if (!body.publicKey) return [400, { ok: false, code: 'missing_public_key' }];
-    return [200, enrollDevice(body.userId ?? DEMO_USER, body.publicKey)];
+    return [200, enrollDevice(sid, body.publicKey)];
   },
 
   // Mint a challenge. `action` and `detail` are what the device will display.
-  'POST /api/pteri/challenge': async (body) => {
+  'POST /api/pteri/challenge': async (body, sid) => {
     if (!body.action || !body.detail) {
       return [400, { ok: false, code: 'missing_action_or_detail' }];
     }
     return [200, issueChallenge({
+      sid,
       origin: body.origin ?? RP_ORIGIN,
       action: body.action,
       detail: body.detail,
     })];
   },
 
-  'POST /api/pteri/verify': async (body) => {
+  'POST /api/pteri/verify': async (body, sid) => {
     const result = verifySignature({
-      userId: body.userId ?? DEMO_USER,
+      sid,
       nonce: body.nonce,
       signatureB64: body.signature,
       expectedOrigin: RP_ORIGIN,
@@ -123,9 +129,9 @@ const routes = {
     return [result.ok ? 200 : 401, result];
   },
 
-  'POST /api/reset': async () => {
-    resetOtp();
-    resetVerifier();
+  'POST /api/reset': async (_body, sid) => {
+    resetOtp(sid);
+    resetVerifier(sid);
     return [200, { ok: true }];
   },
 
@@ -144,7 +150,7 @@ const server = http.createServer(async (req, res) => {
   if (handler) {
     try {
       const body = req.method === 'GET' ? {} : await readJsonBody(req);
-      const [status, payload] = await handler(body);
+      const [status, payload] = await handler(body, sessionOf(req));
       return json(res, status, payload);
     } catch (err) {
       return json(res, 500, { error: 'internal', message: String(err?.message ?? err) });

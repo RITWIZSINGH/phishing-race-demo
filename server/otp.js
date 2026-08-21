@@ -12,8 +12,16 @@ import crypto from 'node:crypto';
 
 const OTP_TTL_MS = 300_000;
 
-/** loginSessionId -> { username, code, exp, verified } */
+/** loginSessionId -> { sid, username, code, exp, verified } */
 const loginSessions = new Map();
+
+// Codes die after five minutes; without this the map keeps every one forever.
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, s] of loginSessions) {
+    if (now > s.exp + OTP_TTL_MS) loginSessions.delete(id);
+  }
+}, 60_000).unref();
 
 function sixDigits() {
   return String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
@@ -24,10 +32,11 @@ function sixDigits() {
  * id tied to THEM. The code goes to the account holder's phone. Those are two
  * different parties whenever this is called by an attacker.
  */
-export function requestOtp(username) {
+export function requestOtp(username, sid) {
   const loginSessionId = crypto.randomBytes(12).toString('base64url');
   const code = sixDigits();
   loginSessions.set(loginSessionId, {
+    sid,
     username,
     code,
     exp: Date.now() + OTP_TTL_MS,
@@ -59,6 +68,9 @@ export function verifyOtp(loginSessionId, code) {
   };
 }
 
-export function resetOtp() {
-  loginSessions.clear();
+/** One visitor's codes only. */
+export function resetOtp(sid) {
+  for (const [id, s] of loginSessions) {
+    if (s.sid === sid) loginSessions.delete(id);
+  }
 }
